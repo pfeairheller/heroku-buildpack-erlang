@@ -10,7 +10,7 @@ main(Args) ->
    {ok, Cwd} = file:get_cwd(),
    TargetDir = Cwd ++ "/awesomeness",
    Result = filelib:ensure_dir(TargetDir ++ "/beam.tgz"),
-   io:format("Error: ~p~n"),
+   io:format("Error: ~p~n", [Result]),
    file:set_cwd(TargetDir),
    case httpc:request(get, {"https://s3.amazonaws.com/heroku-buildpack-erlang-beam/heroku-buildpack-erlang-ebin.tgz", []}, [], []) of
       {ok, {_StatusList, _Headers, Body}} ->
