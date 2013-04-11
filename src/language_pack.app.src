@@ -1,0 +1,12 @@
+{application, language_pack,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { language_pack_app, []}},
+  {env, []}
+ ]}.

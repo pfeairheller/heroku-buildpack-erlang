@@ -1,27 +1,38 @@
-#!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir>
+#!/usr/bin/env escript
+%% bin/compile <build-dir> <cache-dir>
 
-set -e
+%% BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
 
-function message {
-  echo "$1"
-  sync
-}
+main(Args) ->
+   ssl:start(),
+   inets:start(),
 
-BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
+   {ok, Cwd} = file:get_cwd(),
+   TargetDir = Cwd ++ "/awesomeness",
+   filelib:ensure_dir(TargetDir ++ "/beam.tgz"),
+   file:set_cwd(TargetDir),
+   case httpc:request(get, {"https://s3.amazonaws.com/heroku-buildpack-erlang-beam/heroku-buildpack-erlang-ebin.tgz", []}, [], []) of
+      {ok, {_StatusList, _Headers, Body}} ->
+         Binary = zlib:gunzip(Body),
+         erl_tar:extract({binary, Binary}, [{cwd, TargetDir}]);
+      {error, Error} -> io:format("~p~n", [Error])
+   end,
 
-BUILD_DIR=$1
-CACHE_DIR=$2
+   code:add_path(TargetDir ++ "/ebin"),
+   %% Download into binary and extract from there...
 
-unset GIT_DIR
-cd $BUILD_DIR
+   [BuildDir, CacheDir]=Args,
 
-if [ ! -e "rebar" ]; then
-  message "-----> Installing Rebar from buildpack"
-  cp $BIN_DIR/../opt/rebar ./
-fi
+   application:start(language_pack_app),
+   language_pack_app:compile(BuildDir, CacheDir).
 
-message "-----> Building with Rebar"
-./rebar get-deps compile 2>&1 | sed -u 's/^/       /'
-[ "${PIPESTATUS[*]}" = "0 0" ]
+
+%% if [ ! -e "rebar" ]; then
+%%   message "-----> Installing Rebar from buildpack"
+%%   cp $BIN_DIR/../opt/rebar ./
+%% fi
+
+%% message "-----> Building with Rebar"
+%% ./rebar get-deps compile 2>&1 | sed -u 's/^/       /'
+%% [ "${PIPESTATUS[*]}" = "0 0" ]
 
